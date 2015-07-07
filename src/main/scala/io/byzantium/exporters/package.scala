@@ -3,8 +3,6 @@ package io.byzantium
 /**
  * @author Scott Mansfield
  */
-package object `import` {
+package object exporters {
 
 }
-
-

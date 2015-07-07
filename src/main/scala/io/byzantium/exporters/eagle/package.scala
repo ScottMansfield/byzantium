@@ -1,4 +1,4 @@
-package io.byzantium.`import`
+package io.byzantium.exporters
 
 /**
  * @author Scott Mansfield
