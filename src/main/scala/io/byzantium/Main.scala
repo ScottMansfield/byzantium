@@ -1,5 +1,7 @@
 package io.byzantium
 
+import io.byzantium.importers.eagle.EagleImporter
+
 import scalax.collection.Graph
 import scalax.collection.GraphPredef._
 import scalax.collection.edge.LHyperEdge
@@ -12,6 +14,6 @@ import scalax.collection.edge.LHyperEdge
  */
 object Main {
   def main(args: Array[String]) {
-    println("foo")
+    EagleImporter("src/test/resources/ESP8266_BREAKOUT.brd").read()
   }
 }

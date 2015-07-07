@@ -10,5 +10,7 @@ object Land {
 }
 
 class Land(label: String) {
-
+  override def toString: String = {
+    s"Land($label)"
+  }
 }
