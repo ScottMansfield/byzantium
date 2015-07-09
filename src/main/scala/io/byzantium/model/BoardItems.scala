@@ -23,7 +23,7 @@ trait Rotatable {
   def rotation: Double
 }
 
-case class Component(label: String, x: Double, y: Double, rotation: Double, pkg: Package)
+case class Component(label: String, x: Double, y: Double, rotation: Double, desc: ComponentDesc)
   extends BoardItem
   with Position
   with Rotatable
@@ -31,7 +31,7 @@ case class Component(label: String, x: Double, y: Double, rotation: Double, pkg:
 case class NegativeSpace(label: String)
   extends BoardItem
 
-case class Package(label: String, dimensions: Dimensions, pads: Seq[Pad])
+case class ComponentDesc(label: String, dimensions: Dimensions, pads: Seq[Pad])
 
 case class Pad(label: String, x: Double, y: Double, innerRadius: Double, outerRadius: Double, rotation: Double, shape: String)
   extends BoardItem
