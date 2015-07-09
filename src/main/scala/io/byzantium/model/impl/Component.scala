@@ -1,4 +1,6 @@
-package io.byzantium.model
+package io.byzantium.model.impl
+
+import io.byzantium.model.BoardItem
 
 /**
  * @author Scott Mansfield
@@ -9,6 +11,7 @@ object Component {
   }
 }
 
-class Component(label: String, dimensions: Dimensions) {
+class Component(label: String, dimensions: Dimensions)
+  extends BoardItem {
 
 }

@@ -1,4 +1,4 @@
-package io.byzantium.model
+package io.byzantium.model.impl
 
 /**
  * @author Scott Mansfield

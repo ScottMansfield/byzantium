@@ -1,4 +1,6 @@
-package io.byzantium.model
+package io.byzantium.model.impl
+
+import io.byzantium.model.BoardItem
 
 /**
  * @author Scott Mansfield
@@ -9,6 +11,7 @@ object NegativeSpace {
   }
 }
 
-class NegativeSpace(label: String) {
+class NegativeSpace(label: String)
+  extends BoardItem {
 
 }
