@@ -19,14 +19,25 @@ trait Radius {
   def outerRadius: Double
 }
 
-case class Component(label: String, dimensions: Dimensions)
+trait Rotatable {
+  def rotation: Double
+}
+
+case class Component(label: String, x: Double, y: Double, rotation: Double, pkg: Package)
   extends BoardItem
+  with Position
+  with Rotatable
 
 case class NegativeSpace(label: String)
   extends BoardItem
 
-case class Pad(label: String)
+case class Package(label: String, dimensions: Dimensions, pads: Seq[Pad])
+
+case class Pad(label: String, x: Double, y: Double, innerRadius: Double, outerRadius: Double, rotation: Double, shape: String)
   extends BoardItem
+  with Position
+  with Radius
+  with Rotatable
 
 case class Pin(label: String)
   extends BoardItem
