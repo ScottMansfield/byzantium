@@ -3,8 +3,8 @@ package io.byzantium.importers.eagle
 import io.byzantium.model._
 
 import scala.xml.{Elem, Node, XML}
-import scalax.collection.edge.LHyperEdge
-import scalax.collection.immutable.Graph
+import scalax.collection.edge._
+import scalax.collection.mutable.Graph
 
 /**
  * @author Scott Mansfield
@@ -31,7 +31,7 @@ class EagleImporter(doc: Elem) {
     val packages = (doc \\ "packages" \ "package" map { node =>
       val pkgName = node \@ "name"
 
-      val pads = node \ "pad" map { (node: Node) =>
+      val pins = (node \ "pad" map { (node: Node) =>
         val label = node \@ "name"
         val x = (node \@ "x").toDouble
         val y = (node \@ "y").toDouble
@@ -40,13 +40,13 @@ class EagleImporter(doc: Elem) {
         val rotation = rotToDouble(node \@ "rot")
         val shape = node \@ "shape"
 
-        Pad(label, x, y, innerRadius, outerRadius, rotation, shape)
-      }
+        label -> Pin(label, x, y, innerRadius, outerRadius, rotation, shape)
+      }).toMap
 
-      pkgName -> ComponentDesc(pkgName, Dimensions(), pads)
+      pkgName -> ComponentDesc(pkgName, Dimensions(), pins)
     }).toMap
 
-    packages foreach { println }
+    //packages foreach { println }
 
     // Elements are instances of the packages above
     // elements
@@ -58,12 +58,23 @@ class EagleImporter(doc: Elem) {
       val y = (node \@ "y").toDouble
       val rotation = rotToDouble(node \@ "rot")
       val pkgref = node \@ "package"
-      val desc = packages.getOrElse(pkgref, ComponentDesc("", Dimensions(), Seq()))
+      val desc = packages.getOrElse(pkgref, ComponentDesc("", Dimensions(), Map[String, Pin]()))
 
       label -> Component(label, x, y, rotation, desc)
     }).toMap
 
-    elements foreach { println }
+    //elements foreach { println }
+
+    val elemsAndPins = (elements flatMap { case (label, elem: Component) =>
+      elem.desc.pins map { case (plabel, pin: Pin) =>
+        (elem.label, pin.label) -> (elem, pin)
+      }
+    }).toMap
+
+    // Create our graph
+    // +~+=(elem1, elem2, elems*)(label) adds a new LHyperEdge
+    // +=(edge) will add an edge
+    val retval = Graph[BoardItem, LHyperEdge]()
 
     // Signals connect the different components together logically
     // The contactref elements signify which pads of which element are connected
@@ -72,19 +83,19 @@ class EagleImporter(doc: Elem) {
     // signals
     //   signal(@name) <- edge label (becomes trace label)
     //     contactref(@pad, @element) <- actual connections
-    val signals = doc \\ "signals" \ "signal"
+    doc \\ "signals" \ "signal" foreach { (node: Node) =>
 
-    signals foreach { (node: Node) =>
-      println()
-      println(node \@ "name")
+      val label = node \@ "name"
+      val contactrefs = node \ "contactref"
 
-      node \\ "contactref" foreach {
-        println
-      }
+      // TODO: What if there's only one contactref?
+      // probably just ignore the element
+
+      val pins = contactrefs map { (ref) => elemsAndPins((ref \@ "element", ref \@ "pad")) }
+
+      retval += LHyperEdge(pins)(label).asInstanceOf[LHyperEdge[BoardItem]]
     }
 
-    val edge = LHyperEdge(Trace("trace label"), Pin("pad label"), Pin("pad 2 label"))("edge 1")
-
-    Graph(edge)
+    retval
   }
 }

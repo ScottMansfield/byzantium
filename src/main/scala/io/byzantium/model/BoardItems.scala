@@ -31,16 +31,17 @@ case class Component(label: String, x: Double, y: Double, rotation: Double, desc
 case class NegativeSpace(label: String)
   extends BoardItem
 
-case class ComponentDesc(label: String, dimensions: Dimensions, pads: Seq[Pad])
+case class ComponentDesc(label: String, dimensions: Dimensions, pins: Map[String, Pin])
 
-case class Pad(label: String, x: Double, y: Double, innerRadius: Double, outerRadius: Double, rotation: Double, shape: String)
+case class Pin(label: String, x: Double, y: Double, innerRadius: Double, outerRadius: Double, rotation: Double, shape: String)
   extends BoardItem
   with Position
   with Radius
   with Rotatable
 
-case class Pin(label: String)
+case class Pad(label: String, x: Double, y: Double)
   extends BoardItem
+  with Position
 
 case class ThruHolePad(label: String, x: Double, y: Double, innerRadius: Double, outerRadius: Double)
   extends BoardItem

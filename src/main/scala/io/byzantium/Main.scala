@@ -9,8 +9,8 @@ object Main {
   def main(args: Array[String]) {
     val brdGraph = EagleImporter("src/test/resources/ESP8266_BREAKOUT.brd").read()
 
-    brdGraph.edges foreach { println }
+    brdGraph.edges foreach { x => println(x); println() }
 
-    brdGraph.nodes foreach { println }
+    //brdGraph.nodes foreach { println }
   }
 }
