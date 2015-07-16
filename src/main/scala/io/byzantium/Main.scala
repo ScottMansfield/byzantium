@@ -28,11 +28,10 @@ object Main {
    */
   def step(state: Graph[BoardItem, LHyperEdge]): Seq[Graph[BoardItem, LHyperEdge]] = {
 
-    val traces = state.nodes map { x =>
-      x.value.asInstanceOf[Tuple2[BoardItem, BoardItem]]._1
+    val traces = state.nodes map {
+      _.value.asInstanceOf[(BoardItem, BoardItem)]._1
     } filter {
-      case x: Trace => true
-      case _        => false
+      _.isInstanceOf[Trace]
     }
 
     println("traces")
