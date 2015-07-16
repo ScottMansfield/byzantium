@@ -10,8 +10,7 @@ trait BoardItem extends Product with Serializable {
 }
 
 trait Position {
-  def x: Double
-  def y: Double
+  def position: Point
 }
 
 trait Radius {
@@ -23,7 +22,9 @@ trait Rotatable {
   def rotation: Double
 }
 
-case class Component(label: String, x: Double, y: Double, rotation: Double, desc: ComponentDesc)
+case class Point(x: Double, y: Double)
+
+case class Component(label: String, position: Point, rotation: Double, desc: ComponentDesc)
   extends BoardItem
   with Position
   with Rotatable
@@ -33,25 +34,25 @@ case class NegativeSpace(label: String)
 
 case class ComponentDesc(label: String, dimensions: Dimensions, pins: Map[String, Pin])
 
-case class Pin(label: String, x: Double, y: Double, innerRadius: Double, outerRadius: Double, rotation: Double, shape: String)
+case class Pin(label: String, position: Point, innerRadius: Double, outerRadius: Double, rotation: Double, shape: String)
   extends BoardItem
   with Position
   with Radius
   with Rotatable
 
-case class Pad(label: String, x: Double, y: Double)
+case class Pad(label: String, position: Point)
   extends BoardItem
   with Position
 
-case class ThruHolePad(label: String, x: Double, y: Double, innerRadius: Double, outerRadius: Double)
+case class ThruHolePad(label: String, position: Point, innerRadius: Double, outerRadius: Double)
   extends BoardItem
   with Position
   with Radius
 
-case class Trace(label: String)
+case class Trace(label: String, vertices: Seq[Point])
   extends BoardItem
 
-case class Via(label: String, x: Double, y: Double, innerRadius: Double, outerRadius: Double)
+case class Via(label: String, position: Point, innerRadius: Double, outerRadius: Double)
   extends BoardItem
   with Position
   with Radius
