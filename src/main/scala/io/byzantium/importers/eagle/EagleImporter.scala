@@ -2,9 +2,11 @@ package io.byzantium.importers.eagle
 
 import io.byzantium.model._
 
+import scala.collection.mutable
 import scala.xml.{Elem, Node, XML}
+import scalax.collection.GraphPredef.Param
 import scalax.collection.edge._
-import scalax.collection.mutable.Graph
+import scalax.collection.immutable.Graph
 
 /**
  * @author Scott Mansfield
@@ -24,30 +26,60 @@ class EagleImporter(doc: Elem) {
   }
 
   def read(): Graph[BoardItem, LHyperEdge] = {
-    // grab the packages to create the Component instances
-    // package(@name) <- label
-    //   pad(@name, @x, @y, @drill, @diameter, @shape, @rot)
-    //    ^ label, position, hole size?, outer contact diameter?, shape?, rotation of shape
-    val packages = (doc \\ "packages" \ "package" map { node =>
-      val pkgName = node \@ "name"
+    val packages = getPackages
+    val elemsAndPins = getElemsAndPins(packages)
 
-      val pins = (node \ "pad" map { (node: Node) =>
-        val label = node \@ "name"
-        val x = (node \@ "x").toDouble
-        val y = (node \@ "y").toDouble
-        val innerRadius = (node \@ "drill").toDouble
-        val outerRadius = (node \@ "diameter").toDouble
-        val rotation = rotToDouble(node \@ "rot")
-        val shape = node \@ "shape"
+    // Create our graph builder
+    implicit val config = Graph.defaultConfig
+    val retval = Graph.newBuilder[BoardItem, LHyperEdge]
 
-        label -> Pin(label, x, y, innerRadius, outerRadius, rotation, shape)
-      }).toMap
+    buildSignals(elemsAndPins, retval)
 
-      pkgName -> ComponentDesc(pkgName, Dimensions(), pins)
-    }).toMap
+    retval.result()
+  }
 
-    //packages foreach { println }
+  /**
+   * Builds the graph by connecting different components together with graph edges
+   *
+   * Signals connect the different components together logically
+   * The contactref elements signify which pads of which element are connected
+   * They become the labelled hyper edges, soon to be replaced by traces
+   *
+   * signals
+   *   signal(@name) <- edge label (becomes trace label)
+   *     contactref(@pad, @element) <- actual connections
+   *     
+   * @param elemsAndPins Map of element and pin names for connecting
+   * @param graphBuilder The graph builder that's added to
+   */
+  def buildSignals(elemsAndPins: Map[(String, String), (Component, Pin)], graphBuilder: mutable.Builder[Param[BoardItem, LHyperEdge], Graph[BoardItem, LHyperEdge]]) {
 
+     
+    doc \\ "signals" \ "signal" foreach { (node: Node) =>
+
+      val label = node \@ "name"
+      val contactrefs = node \ "contactref"
+
+      // TODO: What if there's only one contactref?
+      // probably just ignore the element
+
+      val pins = contactrefs map { (ref) => elemsAndPins((ref \@ "element", ref \@ "pad"))}
+
+      graphBuilder += LHyperEdge(pins)(label).asInstanceOf[LHyperEdge[BoardItem]]
+    }
+  }
+
+  /**
+   * Elements are instances of the packages above
+   *
+   *  elements
+   *    element(@name, @package, @x, @y, @rot)
+   *     ^ label, component? reference, position, rotation of package
+   *
+   * @param packages A map from component (package) ID to description
+   * @return A map of (element label, pin label) -> (element, pin)
+   */
+  def getElemsAndPins(packages: Map[String, ComponentDesc]): Map[(String, String), (Component, Pin)] = {
     // Elements are instances of the packages above
     // elements
     //   element(@name, @package, @x, @y, @rot)
@@ -60,42 +92,42 @@ class EagleImporter(doc: Elem) {
       val pkgref = node \@ "package"
       val desc = packages.getOrElse(pkgref, ComponentDesc("", Dimensions(), Map[String, Pin]()))
 
-      label -> Component(label, x, y, rotation, desc)
+      label -> Component(label, Point(x, y), rotation, desc)
     }).toMap
 
-    //elements foreach { println }
-
-    val elemsAndPins = (elements flatMap { case (label, elem: Component) =>
+    (elements flatMap { case (label, elem: Component) =>
       elem.desc.pins map { case (plabel, pin: Pin) =>
-        (elem.label, pin.label) -> (elem, pin)
+        (elem.label, pin.label) ->(elem, pin)
       }
     }).toMap
+  }
 
-    // Create our graph
-    // +~+=(elem1, elem2, elems*)(label) adds a new LHyperEdge
-    // +=(edge) will add an edge
-    val retval = Graph[BoardItem, LHyperEdge]()
+  /**
+   * grab the packages to create the Component instances
+   *
+   * package(@name) <- label
+   *   pad(@name, @x, @y, @drill, @diameter, @shape, @rot)
+   *    ^ label, position, hole size?, outer contact diameter?, shape?, rotation of shape
+   *
+   * @return A Map from package identifier to [[ComponentDesc]]
+   */
+  def getPackages: Map[String, ComponentDesc] = {
+    (doc \\ "packages" \ "package" map { node =>
+      val pkgName = node \@ "name"
 
-    // Signals connect the different components together logically
-    // The contactref elements signify which pads of which element are connected
-    // They become the labelled hyper edges, soon to be replaced by traces
-    //
-    // signals
-    //   signal(@name) <- edge label (becomes trace label)
-    //     contactref(@pad, @element) <- actual connections
-    doc \\ "signals" \ "signal" foreach { (node: Node) =>
+      val pins = (node \ "pad" map { (node: Node) =>
+        val label = node \@ "name"
+        val x = (node \@ "x").toDouble
+        val y = (node \@ "y").toDouble
+        val innerRadius = (node \@ "drill").toDouble
+        val outerRadius = (node \@ "diameter").toDouble
+        val rotation = rotToDouble(node \@ "rot")
+        val shape = node \@ "shape"
 
-      val label = node \@ "name"
-      val contactrefs = node \ "contactref"
+        label -> Pin(label, Point(x, y), innerRadius, outerRadius, rotation, shape)
+      }).toMap
 
-      // TODO: What if there's only one contactref?
-      // probably just ignore the element
-
-      val pins = contactrefs map { (ref) => elemsAndPins((ref \@ "element", ref \@ "pad")) }
-
-      retval += LHyperEdge(pins)(label).asInstanceOf[LHyperEdge[BoardItem]]
-    }
-
-    retval
+      pkgName -> ComponentDesc(pkgName, Dimensions(), pins)
+    }).toMap
   }
 }
